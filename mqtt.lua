@@ -12,7 +12,7 @@ function blink(n)
       gpio.write(light_pin,gpio.LOW);
     end 
 end
-
+chip_id = node.chipid()
 t = require("ds18b20")
 function setup_sensor(t) 
     -- ESP-01 GPIO Mapping
@@ -28,25 +28,24 @@ setup_sensor(t)
 
 -- on receive message
 function onMessage(conn, topic, data)
-  if data ~= nil then
+  if data ~= nil and topic == 'heater' then
     print(topic..":"..data)
-    if data=='off' then
+    if data=='Off' then
+        gpio.write(light_pin,gpio.LOW);
         gpio.write(relay_pin,gpio.HIGH);
     else 
-        blink(2)
+        gpio.write(light_pin,gpio.HIGH);
         gpio.write(relay_pin,gpio.LOW);
     end
   end
 end
 
 function broadcast_temp()
+    response = {}
+    response["id"] = chip_id 
     tmr.alarm(0, 3000, 1, function()
-        client:publish("/tempeature",string.format("%.1f", t.read()),0,0, function(conn) end)
-        if t.read() > TARGET_TEMP then
-           client:publish("/control","off", 0, 0, function(conn) end)
-        else 
-           client:publish("/control","on", 0, 0, function(conn) end)
-        end
+        response["temperature"] = t.read()
+        client:publish("temperature",cjson.encode(response),0,0, function(conn) end)
     end)
 end
 
@@ -54,9 +53,9 @@ function onConnect()
   print('connected')
   client:subscribe( "/all", 0, function() print("subscribed") end)
   client:subscribe( "/announcements", 0, function() print("subscribed") end)
-  client:subscribe( "/chip/" .. node.chipid(), 0, function() print("subscribed") end)
+  client:subscribe( "/chip/" .. chip_id, 0, function() print("subscribed") end)
   client:subscribe( "/ip/" .. wifi.sta.getip(), 0, function() print("subscribed") end)
-  client:subscribe("/control",0, function() print("subscribe success") end)
+  client:subscribe("heater",0, function() print("subscribe success") end)
   broadcast_temp()
 end
 
