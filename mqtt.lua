@@ -43,7 +43,7 @@ end
 function broadcast_temp()
     response = {}
     response["id"] = chip_id 
-    tmr.alarm(0, 3000, 1, function()
+    tmr.alarm(0, 5000, 1, function()
         response["temperature"] = t.read()
         client:publish("temperature",cjson.encode(response),0,0, function(conn) end)
     end)
