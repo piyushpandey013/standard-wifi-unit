@@ -1,6 +1,6 @@
-HOST = "192.168.199.10"
+HOST = "192.168.199.8"
 PORT = "1883"
-TARGET_TEMP=26.0
+TARGET_TEMP=26
 
 client = mqtt.Client(node.chipid(), 30000)
 
