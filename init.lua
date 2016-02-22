@@ -1,9 +1,7 @@
-smart_link_pin=1
 light_pin=2
 sensor_pin = 3
 relay_pin=4
 
-gpio.mode(smart_link_pin, gpio.INT)
 gpio.mode(sensor_pin,  gpio.INPUT)
 gpio.mode(light_pin,  gpio.OUTPUT)
 gpio.mode(relay_pin,  gpio.OUTPUT)
@@ -17,38 +15,33 @@ function run()
     dofile("mqtt.lua")
 end
 
-function wait_for_wifi_conn(ssid,passwd)
-    tmr.alarm (1, 1000, 1, function()
-        if wifi.sta.getip() == nil then
-           print ("-- Waiting for Wifi connection")
-        else
-           tmr.stop(1)
-           print ("-- ESP8266 mode is: " .. wifi.getmode( ))
-           print ("-- MAC:  " .. wifi.ap.getmac( ))
-           print ("-- IP:   " .. wifi.sta.getip( ))
-           print ("-- CHIP: " .. node.chipid())
-           tmr.alarm(2, 3000, 0, function()
-              run()
-          end)
-        end
-    end)
+function print_config()
+    ssid, password, bssid_set, bssid=wifi.sta.getconfig()
+    print("\nCurrent Station configuration:\nSSID : "..ssid
+    .."\nPassword : "..password
+    .."\nBSSID_set : "..bssid_set
+    .."\nBSSID: "..bssid.."\n")
+    return ssid
 end
-
--- Your Wifi connection data
-local SSID = "RippleHome"
-local SSID_PASSWORD = "18629660612"
 wifi.setmode(wifi.STATION)
-wifi.sta.config(SSID, SSID_PASSWORD)
-wifi.sta.autoconnect(1)
-print("waitining on wifi")
+if(print_config() ~= '') then
+    wifi.sta.autoconnect(1)
 
--- Hang out until we get a wifi connection before the httpd server is started
+    tmr.alarm(1,2000, 1, function() 
+      if wifi.sta.getip()==nil then 
+         print(" Wait for IP --> "..wifi.sta.status()) 
+      else 
+         print("New IP address is "..wifi.sta.getip()) 
+         tmr.stop(1) 
+        print('load mqtt')
+            run()
+        end 
+    end)
+else    
+    wifi.startsmart(0, function() 
+     print("Auto config success!")
+     print_config()
+     run()
+    end)
 
-function smart()
-    wifi.startsmart(0 ,wait_for_wifi_conn)
 end
-
-gpio.trig(smart_link_pin,"up",smart)
-wait_for_wifi_conn(run)
-
-
