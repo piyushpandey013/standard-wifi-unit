@@ -1,17 +1,10 @@
-HOST = "192.168.199.8"
-PORT = "1883"
-TARGET_TEMP=26
+HOST = "m10.cloudmqtt.com"
+PORT = "12948"
+USER_NAME = "qegbzezg"
+PASSWORD = "GaD8XPkgNZMH"
 
-client = mqtt.Client(node.chipid(), 30000)
+client = mqtt.Client(node.chipid(), 30000, USER_NAME, PASSWORD)
 
-function blink(n)
-    for i=n, 1, -1
-    do 
-      gpio.write(light_pin,gpio.HIGH);
-      tmr.delay(500000)
-      gpio.write(light_pin,gpio.LOW);
-    end 
-end
 chip_id = node.chipid()
 t = require("ds18b20")
 function setup_sensor(t) 
@@ -45,7 +38,7 @@ function broadcast_temp()
     response["id"] = chip_id 
     tmr.alarm(0, 5000, 1, function()
         response["temperature"] = t.read()
-        client:publish("temperature",cjson.encode(response),0,0, function(conn) end)
+        client:publish("/temperature",cjson.encode(response),0,0, function(conn) end)
     end)
 end
 
@@ -55,7 +48,7 @@ function onConnect()
   client:subscribe( "/announcements", 0, function() print("subscribed") end)
   client:subscribe( "/chip/" .. chip_id, 0, function() print("subscribed") end)
   client:subscribe( "/ip/" .. wifi.sta.getip(), 0, function() print("subscribed") end)
-  client:subscribe("heater",0, function() print("subscribe success") end)
+  client:subscribe("/heater",0, function() print("subscribe success") end)
   broadcast_temp()
 end
 
