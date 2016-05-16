@@ -1,8 +1,11 @@
-l = file.list()
-for k,v in pairs(l) do
+files = file.list()
+for k,v in pairs(files) do
     print("name:"..k..", size:"..v)
 end
 
+light_pin = 1
+gpio.mode(light_pin,  gpio.OUTPUT)
+gpio.write(light_pin, gpio.LOW)
 function run()
     dofile("mqtt.lua")
 end

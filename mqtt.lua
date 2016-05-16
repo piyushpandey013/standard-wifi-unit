@@ -3,53 +3,68 @@ PORT = "12948"
 USER_NAME = "qegbzezg"
 PASSWORD = "GaD8XPkgNZMH"
 
+DRIVER_FILE="driver.lua"
+SETUP_FILE="setup.lua"
+RUN_FILE="run.lua"
+
 client = mqtt.Client(node.chipid(), 30000, USER_NAME, PASSWORD)
 
+attr_config = {}
 chip_id = node.chipid()
-t = require("ds18b20")
-function setup_sensor(t) 
-    -- ESP-01 GPIO Mapping
-    t.setup(sensor_pin)
-    addrs = t.addrs()
-    if (addrs ~= nil) then
-      print("Total DS18B20 sensors: "..table.getn(addrs))
-    end
-    -- Just read temperature
-    print("Temperature: "..t.read().."'C")
-end
-setup_sensor(t)
 
--- on receive message
-function onMessage(conn, topic, data)
-  if data ~= nil and topic == 'heater' then
-    print(topic..":"..data)
-    if data=='Off' then
-        gpio.write(light_pin,gpio.LOW);
-        gpio.write(relay_pin,gpio.HIGH);
-    else 
-        gpio.write(light_pin,gpio.HIGH);
-        gpio.write(relay_pin,gpio.LOW);
-    end
-  end
-end
-
-function broadcast_temp()
-    response = {}
-    response["id"] = chip_id 
-    tmr.alarm(0, 5000, 1, function()
-        response["temperature"] = t.read()
-        client:publish("/temperature",cjson.encode(response),0,0, function(conn) end)
-    end)
-end
 
 function onConnect()
   print('connected')
-  client:subscribe( "/all", 0, function() print("subscribed") end)
-  client:subscribe( "/announcements", 0, function() print("subscribed") end)
-  client:subscribe( "/chip/" .. chip_id, 0, function() print("subscribed") end)
-  client:subscribe( "/ip/" .. wifi.sta.getip(), 0, function() print("subscribed") end)
-  client:subscribe("/heater",0, function() print("subscribe success") end)
-  broadcast_temp()
+  gpio.write(light_pin,gpio.HIGH)
+  runExistingProgram()
+  register_info = {}
+  register_info["id"] = chip_id
+  register_info["ip"] = wifi.sta.getip()
+  register_info["mac"] = wifi.ap.getmac()
+  register_info["ssid"] = ssid
+  client:publish("/register",cjson.encode(register_info),0,0, function(conn) end)
+  client:subscribe( "/driver/" .. chip_id, 0, function(conn) end)
+  client:subscribe( "/setup/" .. chip_id, 0, function(conn) end)
+  client:subscribe( "/run/" .. chip_id, 0, function(conn) end)
+  client:subscribe( "/command/" .. chip_id, 0, function(conn) end)
+end
+
+function evalString(string)
+  local func = loadstring(string)
+  if(func) then
+    func()
+  end
+end            
+
+function onMessage(conn, topic, data)
+   print(topic .. "#:" .. data)
+   if topic=="/driver/" .. chip_id then
+      writeConfig(DRIVER_FILE, data)
+   elseif topic=="/setup/" .. chip_id then
+      writeConfig(SETUP_FILE, data)
+   elseif topic=="/run/" .. chip_id then
+      writeConfig(RUN_FILE, data)
+   elseif topic=="/command/" .. chip_id then
+      evalString(data)
+   else
+       client:publish("/noice/" .. chip_id ,"##" .. topic .. "##" .. data ,0,0, function(conn) end)
+   end        
+end
+
+function writeConfig(filename, string)
+    file.open(filename, "w+")
+    file.write(string)
+    file.flush()
+    file.close()
+    evalString(string)
+end
+
+function runExistingProgram()
+    if files[DRIVER_FILE] and files[SETUP_FILE] and files[RUN_FILE] then
+        dofile(DRIVER_FILE)
+        dofile(SETUP_FILE)
+        dofile(RUN_FILE)
+    end
 end
 
 client:connect(HOST, PORT, 0, onConnect)
