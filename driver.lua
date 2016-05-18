@@ -1,38 +1,13 @@
---------------------------------------------------------------------------------
--- DS18B20 one wire module for NODEMCU
--- NODEMCU TEAM
--- LICENCE: http://opensource.org/licenses/MIT
--- Vowstar <vowstar@nodemcu.com>
--- 2015/02/14 sza2 <sza2trash@gmail.com> Fix for negative values
---------------------------------------------------------------------------------
-
--- Set module name as parameter of require
 local modname = ...
 local M = {}
 _G[modname] = M
---------------------------------------------------------------------------------
--- Local used variables
---------------------------------------------------------------------------------
--- DS18B20 dq pin
 local pin = nil
--- DS18B20 default pin
 local defaultPin = 9
---------------------------------------------------------------------------------
--- Local used modules
---------------------------------------------------------------------------------
--- Table module
 local table = table
--- String module
 local string = string
--- One wire module
 local ow = ow
--- Timer module
 local tmr = tmr
--- Limited to local environment
 setfenv(1,M)
---------------------------------------------------------------------------------
--- Implementation
---------------------------------------------------------------------------------
 C = 0
 F = 1
 K = 2
@@ -138,6 +113,4 @@ function read(addr, unit)
     return t
   end
 end
-
--- Return module table
 return M
