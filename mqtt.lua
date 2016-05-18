@@ -27,6 +27,7 @@ function onConnect()
   client:subscribe( "/setup/" .. chip_id, 0, function(conn) end)
   client:subscribe( "/run/" .. chip_id, 0, function(conn) end)
   client:subscribe( "/command/" .. chip_id, 0, function(conn) end)
+  client:subscribe( "/savefile/" .. chip_id, 0, function(conn) end)
 end
 
 function evalString(string)
@@ -39,17 +40,20 @@ end
 function onMessage(conn, topic, data)
    print(topic .. "#:" .. data)
    if topic=="/driver/" .. chip_id then
-      writeConfig(DRIVER_FILE, data)
+     writeConfig(DRIVER_FILE, data)
    elseif topic=="/setup/" .. chip_id then
-      writeConfig(SETUP_FILE, data)
-      evalString(data)
+     writeConfig(SETUP_FILE, data)
+     evalString(data)
    elseif topic=="/run/" .. chip_id then
-      writeConfig(RUN_FILE, data)
-      evalString(data)
+     writeConfig(RUN_FILE, data)
+     evalString(data)
    elseif topic=="/command/" .. chip_id then
-      evalString(data)
+     evalString(data)
+   elseif topic=="/savefile/" .. chip_id then
+     local dataJson=cjson.decode(data)
+     writeConfig(dataJson["filename"], dataJson["payload"])
    else
-       client:publish("/noice/" .. chip_id ,"##" .. topic .. "##" .. data ,0,0, function(conn) end)
+     client:publish("/noice/" .. chip_id ,"##" .. topic .. "##" .. data ,0,0, function(conn) end)
    end        
 end
 
