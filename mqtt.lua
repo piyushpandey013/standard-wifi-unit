@@ -42,8 +42,10 @@ function onMessage(conn, topic, data)
       writeConfig(DRIVER_FILE, data)
    elseif topic=="/setup/" .. chip_id then
       writeConfig(SETUP_FILE, data)
+      evalString(data)
    elseif topic=="/run/" .. chip_id then
       writeConfig(RUN_FILE, data)
+      evalString(data)
    elseif topic=="/command/" .. chip_id then
       evalString(data)
    else
@@ -56,12 +58,10 @@ function writeConfig(filename, string)
     file.write(string)
     file.flush()
     file.close()
-    evalString(string)
 end
 
 function runExistingProgram()
     if files[DRIVER_FILE] and files[SETUP_FILE] and files[RUN_FILE] then
-        dofile(DRIVER_FILE)
         dofile(SETUP_FILE)
         dofile(RUN_FILE)
     end
