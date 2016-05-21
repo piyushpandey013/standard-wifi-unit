@@ -12,22 +12,23 @@ client = mqtt.Client(node.chipid(), 30000, USER_NAME, PASSWORD)
 attr_config = {}
 chip_id = node.chipid()
 
+register_info = {}
+register_info["id"] = chip_id
+register_info["ip"] = wifi.sta.getip()
+register_info["mac"] = wifi.ap.getmac()
+register_info["ssid"] = ssid
+
 
 function onConnect()
   print('connected')
   gpio.write(light_pin,gpio.HIGH)
   runExistingProgram()
-  register_info = {}
-  register_info["id"] = chip_id
-  register_info["ip"] = wifi.sta.getip()
-  register_info["mac"] = wifi.ap.getmac()
-  register_info["ssid"] = ssid
-  client:publish("/register",cjson.encode(register_info),0,0, function(conn) end)
-  client:subscribe( "/driver/" .. chip_id, 0, function(conn) end)
-  client:subscribe( "/setup/" .. chip_id, 0, function(conn) end)
-  client:subscribe( "/run/" .. chip_id, 0, function(conn) end)
-  client:subscribe( "/command/" .. chip_id, 0, function(conn) end)
-  client:subscribe( "/savefile/" .. chip_id, 0, function(conn) end)
+  client:publish("/register",cjson.encode(register_info), 2, 1)
+  client:subscribe( "/driver/" .. chip_id, 2)
+  client:subscribe( "/setup/" .. chip_id, 2)
+  client:subscribe( "/run/" .. chip_id, 2)
+  client:subscribe( "/command/" .. chip_id, 2)
+  client:subscribe( "/savefile/" .. chip_id, 2)
 end
 
 function evalString(string)
@@ -70,7 +71,9 @@ function runExistingProgram()
         dofile(RUN_FILE)
     end
 end
-
+function onDisconnect()
+  client:publish("/disconnect", cjson.encode(register_info),2, 1)
+end
 client:connect(HOST, PORT, 0, onConnect)
+client:on("offline", onDisconnect)
 client:on("message", onMessage)
-
