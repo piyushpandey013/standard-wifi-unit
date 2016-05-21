@@ -22,6 +22,7 @@ register_info["ssid"] = ssid
 function onConnect()
   print('connected')
   gpio.write(light_pin,gpio.HIGH)
+  sntp.sync("cn.pool.ntp.org")
   runExistingProgram()
   client:publish("/register",cjson.encode(register_info), 2, 1)
   client:subscribe( "/driver/" .. chip_id, 2)
